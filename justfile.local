@@ -1,0 +1,23 @@
+update: rebase-main local-version path-install reset-version
+
+rebase-main:
+    git fetch source main
+    git rebase source/main
+
+reset-version:
+    git fetch source main
+    git checkout HEAD -- codex-rs/Cargo.toml codex-rs/Cargo.lock
+
+# Get version from latest rust-v* tag
+local-version:
+    #!/usr/bin/env bash
+    set -e
+    git fetch source --tags
+    tag=$(git tag -l 'rust-v*' | grep -E '^rust-v[0-9]+\.[0-9]+\.[0-9]+(-alpha\.[0-9]+)?$' | sort -V | tail -1)
+    version=${tag#rust-v}
+    local_version="${version}+local"
+    sed -i '' "s/^version = \".*\"/version = \"${local_version}\"/" codex-rs/Cargo.toml
+    echo "Updated Cargo.toml to ${local_version}"
+
+path-install:
+    cargo install --path codex-rs/cli --locked
